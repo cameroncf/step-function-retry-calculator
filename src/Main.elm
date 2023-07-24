@@ -18,10 +18,10 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { intervalSeconds = 1
-    , maxAttempts = 3
-    , backoffRateText = "2.0"
-    , backoffRate = 2.0
+    { intervalSeconds = 10
+    , maxAttempts = 5
+    , backoffRateText = "3.0"
+    , backoffRate = 3.0
     , times = []
     }
         |> calculateTimes
@@ -75,8 +75,18 @@ calculateTimes model =
     else
         let
             values =
-                List.repeat model.maxAttempts 0
-                    |> List.indexedMap (\index _ -> (toFloat model.intervalSeconds) * model.backoffRate * (toFloat index) + (toFloat model.intervalSeconds))
+                List.range 0 (model.maxAttempts-1)
+                    |> List.indexedMap (\index _ -> 
+                        List.foldl
+                            (\attempt acc ->
+                                let
+                                    attemptWaitTime = (toFloat model.intervalSeconds) * (model.backoffRate ^ (toFloat attempt))
+                                in
+                                acc + attemptWaitTime
+                            )
+                            0
+                            (List.range 0 index)
+                    )
         in
         { model | times = values }
 
